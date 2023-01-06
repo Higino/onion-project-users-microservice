@@ -6,10 +6,22 @@ using Xunit;
 
 namespace Otis.Users
 {
-    public class UserServiceTests
+    public class UserServiceTests : IDisposable
     {
-        private readonly UserService subject = new();
-        private readonly Mock<ILambdaContext> lamdaContextMock = new();
+        private readonly Mock<ILambdaContext> lamdaContextMock = new(MockBehavior.Strict);
+        private readonly Mock<IS3Client> s3ClientMock = new(MockBehavior.Strict);
+        private readonly UserService subject;
+
+        public UserServiceTests()
+        {
+            this.subject = new UserService(s3ClientMock.Object);
+        }
+
+        public void Dispose()
+        {
+            lamdaContextMock.VerifyAll();
+            s3ClientMock.VerifyAll();
+        }
 
         [Theory]
         [InlineData("{\"firstName\":\"John\", \"lastName\": \"Doe\", \"emailAddress\": \"john.doe@xpto.com\" }")]
@@ -23,6 +35,11 @@ namespace Otis.Users
             };
 
             lamdaContextMock.Setup(m => m.Logger.LogInformation(It.IsRegex("john.doe@xpto.com")));
+            s3ClientMock.Setup(m => m.UploadFileToBucket(
+                    "otis.user.preregister",
+                    It.IsRegex(@"^UserPreregister_\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}.json$"),
+                    It.Is<string>(m => m.Contains("John") && m.Contains("Doe") && m.Contains("john.doe@xpto.com")))
+                ).Returns(Task.CompletedTask);
 
             // ACT
             var response = subject.PreregisterUser(request, lamdaContextMock.Object);
@@ -30,8 +47,6 @@ namespace Otis.Users
             // ASSERT
             response.Should().NotBeNull();
             response.StatusCode.Should().Be(200);
-
-            lamdaContextMock.VerifyAll();
         }
 
         [Theory]
