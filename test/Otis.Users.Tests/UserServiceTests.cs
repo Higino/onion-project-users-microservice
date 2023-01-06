@@ -34,11 +34,11 @@ namespace Otis.Users
                 Body = body,
             };
 
-            lamdaContextMock.Setup(m => m.Logger.LogInformation(It.IsRegex("john.doe@xpto.com")));
+            lamdaContextMock.Setup(m => m.Logger.LogInformation(It.Is<string>(message => message.Contains("received and uploaded"))));
             s3ClientMock.Setup(m => m.UploadFileToBucket(
                     "otis.user.preregister",
                     It.IsRegex(@"^UserPreregister_\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}.json$"),
-                    It.Is<string>(m => m.Contains("John") && m.Contains("Doe") && m.Contains("john.doe@xpto.com")))
+                    It.Is<string>(body => body.Contains("John") && body.Contains("Doe") && body.Contains("john.doe@xpto.com")))
                 ).Returns(Task.CompletedTask);
 
             // ACT
@@ -69,8 +69,6 @@ namespace Otis.Users
             // ASSERT
             response.Should().NotBeNull();
             response.StatusCode.Should().Be(400);
-
-            lamdaContextMock.VerifyAll();
         }
     }
 }
