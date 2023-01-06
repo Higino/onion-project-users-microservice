@@ -12,5 +12,5 @@
   "function-runtime": "dotnet6",
   "function-memory-size": 256,
   "function-timeout": 30,
-  "function-handler": "Otis.Users::Otis.Users.Function::FunctionHandler"
+  "function-handler": "Otis.Users::Otis.Users.UserService::PreregisterUser"
 }
