@@ -38,12 +38,12 @@ If already installed check if new version is available.
 
 Execute unit tests
 ```
-    cd "Otis.Users/test/Otis.Users.Tests"
+    cd "test/Otis.Users.Tests"
     dotnet test
 ```
 
 Deploy function to AWS Lambda
 ```
-    cd "Otis.Users/src/Otis.Users"
+    cd "src/Otis.Users"
     dotnet lambda deploy-function
 ```
