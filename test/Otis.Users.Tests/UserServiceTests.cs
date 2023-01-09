@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Amazon.Lambda.APIGatewayEvents;
 using Amazon.Lambda.Core;
 using FluentAssertions;
@@ -26,6 +27,7 @@ namespace Otis.Users
         [Theory]
         [InlineData("{\"firstName\":\"John\", \"lastName\": \"Doe\", \"emailAddress\": \"john.doe@xpto.com\" }", "John", "Doe", "john.doe@xpto.com")]
         [InlineData("{\"FirstName\":\"John\", \"LastName\": \"Doe\", \"EmailAddress\": \"john.doe@xpto.com\" }", "John", "Doe", "john.doe@xpto.com")]
+        [InlineData("{\"FirstName\":\"John\", \"EmailAddress\": \"john.doe@xpto.com\" }", "John", null, "john.doe@xpto.com")]
         public void Preregister_Success(string body, string expectedFirstName, string expectedLastName, string expectedEmailAddress)
         {
             // ARRANGE 
@@ -34,39 +36,18 @@ namespace Otis.Users
                 Body = body,
             };
 
-            lamdaContextMock.Setup(m => m.Logger.LogInformation(It.Is<string>(message => message.Contains("received and uploaded"))));
-            s3ClientMock.Setup(m => m.UploadFileToBucket(
-                    "otis.user.preregister",
-                    It.IsRegex(@"^UserPreregister_\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}.json$"),
-                    It.Is<string>(body => body.Contains(expectedFirstName) 
-                                            && body.Contains(expectedLastName) 
-                                            && body.Contains(expectedEmailAddress)))
-                ).Returns(Task.CompletedTask);
-
-            // ACT
-            var response = subject.PreregisterUser(request, lamdaContextMock.Object);
-
-            // ASSERT
-            response.Should().NotBeNull();
-            response.StatusCode.Should().Be(200);
-        }
-
-        [Theory]
-        [InlineData("{\"FirstName\":\"John\", \"EmailAddress\": \"john.doe@xpto.com\" }", "John", "john.doe@xpto.com")]
-        public void Preregister_Success_NoEmail(string body, string expectedFirstName,  string expectedEmailAddress)
-        {
-            // ARRANGE 
-            var request = new APIGatewayProxyRequest
+            var expectedJson = JsonSerializer.Serialize(new UserRegisterRequestModel
             {
-                Body = body,
-            };
+                FirstName = expectedFirstName,
+                LastName = expectedLastName,
+                EmailAddress = expectedEmailAddress
+            });
 
             lamdaContextMock.Setup(m => m.Logger.LogInformation(It.Is<string>(message => message.Contains("received and uploaded"))));
             s3ClientMock.Setup(m => m.UploadFileToBucket(
                     "otis.user.preregister",
                     It.IsRegex(@"^UserPreregister_\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}.json$"),
-                    It.Is<string>(body => body.Contains(expectedFirstName) 
-                                            && body.Contains(expectedEmailAddress)))
+                    It.Is<string>(body => body.Equals(expectedJson)))
                 ).Returns(Task.CompletedTask);
 
             // ACT
