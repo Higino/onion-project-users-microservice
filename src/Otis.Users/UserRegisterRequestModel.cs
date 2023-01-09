@@ -8,8 +8,6 @@ public sealed class UserRegisterRequestModel
     [MinLength(3)]
     public string? FirstName { get; set; }
 
-    [Required]
-    [MinLength(3)]
     public string? LastName { get; set; }
 
     [Required]
